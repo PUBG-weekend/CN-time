@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球时间对比 - 以北京时间为参考</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0F3460',     // 深蓝色主色调
+                        secondary: '#1A73E8',   // 亮蓝色辅助色
+                        neutral: '#F0F4F8',     // 背景色
+                        cardBg: '#FFFFFF',      // 卡片背景色
+                        textPrimary: '#1A202C', // 主要文本色
+                        textSecondary: '#4A5568', // 次要文本色
+                        beijing: '#E53E3E',     // 北京时间突出色
+                        day: '#E6F4FF',         // 白天背景色
+                        night: '#0F172A',       // 黑夜背景色
+                        dayLabel: '#E6F4FF',    // 白天标签背景
+                        nightLabel: '#1E293B',  // 黑夜标签背景
+                        dayText: '#0F3460',     // 白天文本色
+                        nightText: '#F8FAFC',   // 黑夜文本色
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .hover-lift {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .hover-lift:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 30px rgba(15, 52, 96, 0.15);
+            }
+            .time-bar {
+                height: 40px;
+                position: relative;
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 50px; /* 增加底部边距以容纳更大的标签 */
+            }
+            .time-gradation {
+                position: absolute;
+                height: 100%;
+                width: 100%;
+                background: linear-gradient(90deg, 
+                    #0F172A 0%, #0F172A 25%, 
+                    #E6F4FF 25%, #E6F4FF 75%, 
+                    #0F172A 75%, #0F172A 100%);
+                background-size: 100% 100%;
+            }
+            .hour-markers {
+                position: absolute;
+                height: 100%;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+            .hour-marker {
+                width: 1px;
+                background-color: rgba(255, 255, 255, 0.3);
+                height: 100%;
+                position: relative;
+            }
+            .hour-marker::after {
+                content: attr(data-hour);
+                position: absolute;
+                bottom: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 12px;
+                color: #4A5568;
+            }
+            .time-indicator {
+                position: absolute;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                z-index: 10;
+            }
+            .time-label {
+                position: absolute;
+                white-space: nowrap;
+                font-size: 24px; /* 字体大小增加一倍（原为12px） */
+                font-weight: 500;
+                padding: 4px 8px; /* 增加内边距以适应更大的字体 */
+                border-radius: 4px;
+                transition: all 0.3s ease;
+            }
+            .beijing-indicator {
+                background-color: #E53E3E;
+                box-shadow: 0 0 0 4px rgba(229, 62, 62, 0.2);
+            }
+            .beijing-label-day {
+                background-color: rgba(229, 62, 62, 0.1);
+                color: #E53E3E;
+                top: -40px; /* 调整位置以适应更大的标签 */
+            }
+            .beijing-label-night {
+                background-color: rgba(229, 62, 62, 0.8);
+                color: white;
+                top: -40px; /* 调整位置以适应更大的标签 */
+            }
+            .city-indicator {
+                background-color: #1A202C;
+                box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.2);
+            }
+            .city-label-day {
+                background-color: #E6F4FF;
+                color: #0F3460;
+                bottom: -40px; /* 调整位置以适应更大的标签 */
+            }
+            .city-label-night {
+                background-color: #1E293B;
+                color: #F8FAFC;
+                bottom: -40px; /* 调整位置以适应更大的标签 */
+            }
+            .time-diff-line {
+                position: absolute;
+                height: 2px;
+                background-color: rgba(26, 115, 232, 0.3);
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 5;
+            }
+            .time-diff-label {
+                position: absolute;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                background-color: rgba(26, 115, 232, 0.9);
+                color: white;
+                font-size: 11px;
+                padding: 1px 4px;
+                border-radius: 3px;
+                white-space: nowrap;
+                z-index: 6;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral font-inter text-textPrimary min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- 页面标题 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-primary mb-2">全球时间对比</h1>
+            <p class="text-textSecondary text-lg">以北京时间为参考的全球主要城市时间对比
+                <span id="last-update" class="ml-2 text-sm bg-secondary/10 text-secondary px-2 py-0.5 rounded">
+                    最后更新: 加载中...
+                </span>
+            </p>
+        </header>
+        
+        <!-- 时间对比图表 -->
+        <section class="mb-10 bg-cardBg rounded-xl p-5 card-shadow">
+            <h2 class="text-xl font-semibold mb-6 flex items-center text-primary">
+                <i class="fa fa-clock-o mr-2"></i>24小时时间对比
+            </h2>
+            
+            <!-- 图表说明 -->
+            <div class="mb-4 text-sm text-textSecondary">
+                <p>图表显示全球主要城市的当前时间位置，<span class="inline-block w-3 h-3 bg-day rounded-sm align-middle mr-1"></span>表示白天时段（6:00-18:00），<span class="inline-block w-3 h-3 bg-night rounded-sm align-middle mr-1"></span>表示夜间时段（18:00-6:00）</p>
+            </div>
+            
+            <!-- 时间轴 -->
+            <div class="relative">
+                <div class="time-bar">
+                    <!-- 日夜背景渐变 -->
+                    <div class="time-gradation"></div>
+                    
+                    <!-- 小时刻度 -->
+                    <div class="hour-markers">
+                        <!-- 动态生成24小时刻度 -->
+                    </div>
+                    
+                    <!-- 时差连接线 -->
+                    <div id="time-diff-container"></div>
+                    
+                    <!-- 北京时间指示器 (固定在当前北京时区时间) -->
+                    <div id="beijing-indicator" class="time-indicator beijing-indicator"></div>
+                    <div id="beijing-label" class="time-label"></div>
+                    
+                    <!-- 其他城市时间指示器和标签 -->
+                    <div id="city-indicators"></div>
+                    <div id="city-labels"></div>
+                </div>
+                
+                <!-- 时间轴说明 -->
+                <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm mt-6">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-beijing rounded-full mr-2"></div>
+                        <span>北京时间</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-secondary rounded-full mr-2"></div>
+                        <span>其他城市时间</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-10 h-2 bg-secondary/30 mr-2"></div>
+                        <span>时差示意</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-6 h-3 bg-dayLabel border border-day mr-2"></div>
+                        <span>白天</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-6 h-3 bg-nightLabel border border-night mr-2"></div>
+                        <span>黑夜</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 全球城市时间详情 -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4 flex items-center text-primary">
+                <i class="fa fa-map-marker mr-2"></i>全球主要城市时间详情
+            </h2>
+            <div id="cities-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- 城市时间卡片将通过JavaScript动态生成 -->
+            </div>
+        </section>
+        
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-textSecondary text-sm">
+            <p>实时时间更新中 <span class="inline-block w-2 h-2 bg-secondary rounded-full animate-pulse ml-1"></span></p>
+        </footer>
+    </div>
+
+    <script>
+        // 城市数据 - 主要国际城市
+        const cities = [
+            { name: "北京", country: "中国", timezone: "Asia/Shanghai", flag: "🇨🇳", isReference: true },
+            { name: "纽约", country: "美国", timezone: "America/New_York", flag: "🇺🇸" },
+            { name: "伦敦", country: "英国", timezone: "Europe/London", flag: "🇬🇧" },
+            { name: "东京", country: "日本", timezone: "Asia/Tokyo", flag: "🇯🇵" },
+            { name: "悉尼", country: "澳大利亚", timezone: "Australia/Sydney", flag: "🇦🇺" },
+            { name: "洛杉矶", country: "美国", timezone: "America/Los_Angeles", flag: "🇺🇸" },
+            { name: "巴黎", country: "法国", timezone: "Europe/Paris", flag: "🇫🇷" },
+            { name: "迪拜", country: "阿联酋", timezone: "Asia/Dubai", flag: "🇦🇪" },
+            { name: "莫斯科", country: "俄罗斯", timezone: "Europe/Moscow", flag: "🇷🇺" },
+            { name: "新加坡", country: "新加坡", timezone: "Asia/Singapore", flag: "🇸🇬" },
+            { name: "孟买", country: "印度", timezone: "Asia/Kolkata", flag: "🇮🇳" },
+            { name: "里约热内卢", country: "巴西", timezone: "America/Sao_Paulo", flag: "🇧🇷" }
+        ];
+        
+        // 判断是否为白天（6:00-18:00）
+        function isDaytime(hour) {
+            return hour >= 6 && hour < 18;
+        }
+        
+        // 初始化小时刻度
+        function initHourMarkers() {
+            const hourMarkersContainer = document.querySelector('.hour-markers');
+            hourMarkersContainer.innerHTML = '';
+            
+            // 创建24小时刻度
+            for (let hour = 0; hour < 24; hour++) {
+                const marker = document.createElement('div');
+                marker.className = 'hour-marker';
+                marker.style.left = `${(hour / 24) * 100}%`;
+                marker.dataset.hour = hour.toString().padStart(2, '0') + ':00';
+                hourMarkersContainer.appendChild(marker);
+            }
+        }
+        
+        // 格式化时间函数
+        function formatTime(date) {
+            return date.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+        
+        // 格式化日期函数
+        function formatDate(date) {
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            });
+        }
+        
+        // 计算与北京时间的时差（小时）
+        function getTimeDifference(cityTimezone) {
+            const beijingTime = new Date();
+            const cityTime = new Date(new Date().toLocaleString('en-US', { timeZone: cityTimezone }));
+            
+            // 计算时差（小时）
+            const diffMs = cityTime - beijingTime;
+            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+            
+            return diffHours;
+        }
+        
+        // 格式化时差显示
+        function formatTimeDifference(diffHours) {
+            if (diffHours === 0) return "与北京同时区";
+            return diffHours > 0 
+                ? `快 ${diffHours} 小时` 
+                : `慢 ${Math.abs(diffHours)} 小时`;
+        }
+        
+        // 更新所有城市时间卡片
+        function updateAllCityTimes() {
+            const citiesContainer = document.getElementById('cities-container');
+            citiesContainer.innerHTML = '';
+            
+            // 获取北京时间作为参考
+            const beijingTime = new Date();
+            
+            cities.forEach(city => {
+                const cityTime = new Date(new Date().toLocaleString('en-US', { timeZone: city.timezone }));
+                const diffHours = getTimeDifference(city.timezone);
+                const cityHour = cityTime.getHours();
+                const isDay = isDaytime(cityHour);
+                
+                const cityCard = document.createElement('div');
+                // 为北京时间卡片添加特殊样式
+                const cardClasses = city.isReference 
+                    ? 'bg-cardBg rounded-xl p-5 card-shadow hover-lift border-2 border-beijing'
+                    : 'bg-cardBg rounded-xl p-5 card-shadow hover-lift';
+                
+                // 根据日夜添加不同的卡片样式
+                const timeOfDayClass = isDay ? 'bg-day/30' : 'bg-night/10';
+                
+                cityCard.className = `${cardClasses} ${timeOfDayClass}`;
+                cityCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-semibold text-lg ${city.isReference ? 'text-beijing' : 'text-primary'}">${city.flag} ${city.name}</h3>
+                        <span class="text-sm text-textSecondary">${city.country}</span>
+                    </div>
+                    <div class="text-2xl font-mono font-bold mb-2">${formatTime(cityTime)}</div>
+                    <div class="text-sm text-textSecondary mb-2">${formatDate(cityTime)}</div>
+                    <div class="text-sm ${diffHours > 0 ? 'text-secondary' : diffHours < 0 ? 'text-primary' : 'text-textSecondary'}">
+                        ${formatTimeDifference(diffHours)}
+                    </div>
+                    <div class="text-xs mt-1 ${isDay ? 'text-dayText' : 'text-nightText'}">
+                        ${isDay ? '白天' : '黑夜'}
+                    </div>
+                `;
+                
+                citiesContainer.appendChild(cityCard);
+            });
+            
+            updateTimeComparisonChart();
+            updateLastUpdateTime();
+        }
+        
+        // 更新时间对比图表
+        function updateTimeComparisonChart() {
+            // 获取北京时间在24小时中的百分比位置
+            const beijingTime = new Date();
+            const beijingHours = beijingTime.getHours();
+            const beijingMinutes = beijingTime.getMinutes();
+            const beijingPercentage = ((beijingHours * 60 + beijingMinutes) / (24 * 60)) * 100;
+            const beijingIsDay = isDaytime(beijingHours);
+            
+            // 更新北京时间指示器位置和标签
+            const beijingIndicator = document.getElementById('beijing-indicator');
+            const beijingLabel = document.getElementById('beijing-label');
+            beijingIndicator.style.left = `${beijingPercentage}%`;
+            beijingLabel.style.left = `${beijingPercentage}%`;
+            beijingLabel.textContent = `北京 ${formatTime(beijingTime).substring(0, 5)}`;
+            
+            // 根据日夜切换北京标签样式
+            beijingLabel.className = beijingIsDay ? 'time-label beijing-label-day' : 'time-label beijing-label-night';
+            
+            // 清空之前的指示器和连接线
+            const cityIndicatorsContainer = document.getElementById('city-indicators');
+            const cityLabelsContainer = document.getElementById('city-labels');
+            const timeDiffContainer = document.getElementById('time-diff-container');
+            cityIndicatorsContainer.innerHTML = '';
+            cityLabelsContainer.innerHTML = '';
+            timeDiffContainer.innerHTML = '';
+            
+            cities.forEach(city => {
+                if (city.isReference) return; // 跳过北京
+                
+                const cityTime = new Date(new Date().toLocaleString('en-US', { timeZone: city.timezone }));
+                const cityHours = cityTime.getHours();
+                const cityMinutes = cityTime.getMinutes();
+                const cityPercentage = ((cityHours * 60 + cityMinutes) / (24 * 60)) * 100;
+                const diffHours = getTimeDifference(city.timezone);
+                const cityIsDay = isDaytime(cityHours);
+                
+                // 创建城市时间指示器
+                const indicator = document.createElement('div');
+                indicator.className = 'time-indicator city-indicator';
+                indicator.style.left = `${cityPercentage}%`;
+                indicator.title = `${city.name}: ${formatTime(cityTime)} (${cityIsDay ? '白天' : '黑夜'})`;
+                cityIndicatorsContainer.appendChild(indicator);
+                
+                // 创建城市标签，根据日夜切换样式
+                const label = document.createElement('div');
+                label.className = cityIsDay ? 'time-label city-label-day' : 'time-label city-label-night';
+                label.style.left = `${cityPercentage}%`;
+                label.textContent = `${city.name} ${formatTime(cityTime).substring(0, 5)}`;
+                cityLabelsContainer.appendChild(label);
+                
+                // 创建时差连接线和标签
+                if (Math.abs(diffHours) > 0) {
+                    // 计算线的起始和结束位置
+                    let start, end, labelPos;
+                    
+                    if (beijingPercentage <= cityPercentage) {
+                        start = beijingPercentage;
+                        end = cityPercentage;
+                        labelPos = (start + end) / 2;
+                    } else {
+                        // 处理跨天的情况
+                        // 创建第一条线
+                        const line1 = document.createElement('div');
+                        line1.className = 'time-diff-line';
+                        line1.style.left = `${beijingPercentage}%`;
+                        line1.style.width = `${100 - beijingPercentage}%`;
+                        timeDiffContainer.appendChild(line1);
+                        
+                        // 创建第二条线
+                        const line2 = document.createElement('div');
+                        line2.className = 'time-diff-line';
+                        line2.style.width = `${cityPercentage}%`;
+                        timeDiffContainer.appendChild(line2);
+                        
+                        // 时差标签放在中间位置
+                        labelPos = (cityPercentage + 100 + beijingPercentage) / 2 % 100;
+                        start = 0;
+                        end = 0; // 已处理跨天情况
+                    }
+                    
+                    // 如果不是跨天情况，创建一条线
+                    if (start !== 0 || end !== 0) {
+                        const line = document.createElement('div');
+                        line.className = 'time-diff-line';
+                        line.style.left = `${start}%`;
+                        line.style.width = `${end - start}%`;
+                        timeDiffContainer.appendChild(line);
+                    }
+                    
+                    // 创建时差标签
+                    const diffLabel = document.createElement('div');
+                    diffLabel.className = 'time-diff-label';
+                    diffLabel.style.left = `${labelPos}%`;
+                    diffLabel.textContent = diffHours > 0 ? `+${diffHours}h` : `${diffHours}h`;
+                    timeDiffContainer.appendChild(diffLabel);
+                }
+            });
+        }
+        
+        // 更新最后数据更新时间
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const formattedTime = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('last-update').textContent = `最后更新: ${formattedTime}`;
+        }
+        
+        // 初始化页面
+        initHourMarkers();
+        updateAllCityTimes();
+        
+        // 定时更新 - 每秒更新一次
+        setInterval(updateAllCityTimes, 1000);
+    </script>
+</body>
+</html>
