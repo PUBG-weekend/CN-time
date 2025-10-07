@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球时间对比 - 以北京时间为参考</title>
+    <title>全球时间对比</title>
     <!-- 引入Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入Font Awesome -->
@@ -58,7 +58,7 @@
                 position: relative;
                 border-radius: 4px;
                 overflow: hidden;
-                margin-bottom: 50px; /* 增加底部边距以容纳更大的标签 */
+                margin-bottom: 50px;
             }
             .time-gradation {
                 position: absolute;
@@ -104,9 +104,9 @@
             .time-label {
                 position: absolute;
                 white-space: nowrap;
-                font-size: 24px; /* 字体大小增加一倍（原为12px） */
+                font-size: 24px;
                 font-weight: 500;
-                padding: 4px 8px; /* 增加内边距以适应更大的字体 */
+                padding: 4px 8px;
                 border-radius: 4px;
                 transition: all 0.3s ease;
             }
@@ -117,12 +117,12 @@
             .beijing-label-day {
                 background-color: rgba(229, 62, 62, 0.1);
                 color: #E53E3E;
-                top: -40px; /* 调整位置以适应更大的标签 */
+                top: -40px;
             }
             .beijing-label-night {
                 background-color: rgba(229, 62, 62, 0.8);
                 color: white;
-                top: -40px; /* 调整位置以适应更大的标签 */
+                top: -40px;
             }
             .city-indicator {
                 background-color: #1A202C;
@@ -131,12 +131,12 @@
             .city-label-day {
                 background-color: #E6F4FF;
                 color: #0F3460;
-                bottom: -40px; /* 调整位置以适应更大的标签 */
+                bottom: -40px;
             }
             .city-label-night {
                 background-color: #1E293B;
                 color: #F8FAFC;
-                bottom: -40px; /* 调整位置以适应更大的标签 */
+                bottom: -40px;
             }
             .time-diff-line {
                 position: absolute;
@@ -166,11 +166,6 @@
         <!-- 页面标题 -->
         <header class="mb-8 text-center">
             <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-primary mb-2">全球时间对比</h1>
-            <p class="text-textSecondary text-lg">以北京时间为参考的全球主要城市时间对比
-                <span id="last-update" class="ml-2 text-sm bg-secondary/10 text-secondary px-2 py-0.5 rounded">
-                    最后更新: 加载中...
-                </span>
-            </p>
         </header>
         
         <!-- 时间对比图表 -->
@@ -198,7 +193,7 @@
                     <!-- 时差连接线 -->
                     <div id="time-diff-container"></div>
                     
-                    <!-- 北京时间指示器 (固定在当前北京时区时间) -->
+                    <!-- 北京时间指示器 -->
                     <div id="beijing-indicator" class="time-indicator beijing-indicator"></div>
                     <div id="beijing-label" class="time-label"></div>
                     
@@ -369,7 +364,6 @@
             });
             
             updateTimeComparisonChart();
-            updateLastUpdateTime();
         }
         
         // 更新时间对比图表
@@ -470,17 +464,6 @@
                     timeDiffContainer.appendChild(diffLabel);
                 }
             });
-        }
-        
-        // 更新最后数据更新时间
-        function updateLastUpdateTime() {
-            const now = new Date();
-            const formattedTime = now.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('last-update').textContent = `最后更新: ${formattedTime}`;
         }
         
         // 初始化页面
